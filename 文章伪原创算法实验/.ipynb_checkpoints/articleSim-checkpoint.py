@@ -9,40 +9,34 @@ class ArticleSim():
     doclist:list  file name list
     testfilelist:list test file name list
     '''
-    doclist=[] #doc file name list
-    testfilelist=[] #test file name list
-
-    def setDoc(self,doclist):
+    def __init__(self,doclist,testfilelist):
         self.doclist=doclist
-
-    def setTestDoc(self,testfilelist):
         self.testfilelist=testfilelist
         
     #读取列表文件
-    def readListFile(self,mydoclist):
-        my_docs_content_list=[]
-        for file in mydoclist:
-            f=open(file,mode="r",encoding="utf-8")
+    def readListFile(self,encoding="utf-8"):
+        doc_list=[]
+        for file in self.doclist:
+            f=open(file,mode="r",encoding=encoding)
             content=f.read()
-            my_docs_content_list.append(content)
+            doc_list.append(content)
             f.close()
-        return my_docs_content_list
-
+        return doc_list
+    
     #对文档进行分词，并删除停止词 
-    def cutWordUseStopWrod(self,my_docs_content_list):
+    def cutWordUseStopWrod(self,docs_content_list,myStopWordList,myStopWordFlagList):
         stopWordList=set()
         #生成停止词列表
         stopFileList=["百度停用词列表.txt","哈工大停用词表.txt","四川大学机器智能实验室停用词库.txt","中文停用词库.txt","自己的停止词词库.txt"]
         for file in stopFileList:
-            for line in open(file,mode="r",encoding="gbk"):
-                stopWordList.add(line.replace(" ",""))
+            for line in open(file,mode="r",encoding="utf-8"):
+                stopWordList.add(line.replace(" "))
             
-        myStopWordFlagList=[]
-        for flag in open("词性过滤表.txt",mode="r",encoding="utf-8"):
-            myStopWordFlagList.append(flag.replace(" ",""))
+        for w in myStopWordList:
+            stopWordList.add(w)
         
         all_docs_words=[]
-        for content in my_docs_content_list:
+        for content in docs_content_list:
             pwords=posseg.cut(content)
             pwords=[word for word in pwords if word.word not in stopWordList]
             pwords=[word.word for word in pwords if word.flag not in myStopWordFlagList]
@@ -71,7 +65,7 @@ class ArticleSim():
         tfidf = models.TfidfModel(corpus)
         
         #获取测试文档中，每个词的TF-IDF值
-        #print(tfidf[doc_test_vec])
+        print(tfidf[doc_test_vec])
         
         #对每个目标文档，分析测试文档的相似度
         index = similarities.SparseMatrixSimilarity(tfidf[corpus], num_features=len(dictionary.keys()))
@@ -82,21 +76,3 @@ class ArticleSim():
         
         return result
         
-
-    #开始计算
-    def run(self,doclist,testfilelist):
-        self.setDoc(doclist)
-        self.setTestDoc(testfilelist)    
-
-        docs_content_list=self.readListFile(self.doclist)
-        tests_content_list=self.readListFile(self.testfilelist)
-
-        all_docs_words=self.cutWordUseStopWrod(docs_content_list)
-      
-        test_docs_words=self.cutWordUseStopWrod(tests_content_list)
-        #import pdb
-        #pdb.set_trace()
-        r=self.sim(all_docs_words,test_docs_words[0])
-        print("#" * 50)
-        print("最后结果如下：")
-        print(r)
